@@ -148,3 +148,132 @@ Business code should not depend on whether requests originate from:
 - RSocket
 - Future transport implementations
 
+The transport protocol belongs to the infrastructure layer.
+
+---
+
+## Runtime Modes
+
+The framework supports multiple runtime modes.
+
+Each mode shares the same Spring MVC programming model while using a different
+strategy to introduce transport protocols.
+
+The runtime mode is an infrastructure decision rather than an application
+decision.
+
+---
+
+### Mode 0 - Native HTTP
+
+This is the standard Spring Boot deployment model and serves as the reference
+architecture for this project.
+
+```
+               Client
+                  │
+             HTTP / HTTPS
+                  │
+                  ▼
+      Tomcat Connector (Coyote)
+                  │
+                  ▼
+      Servlet Container Runtime
+                  │
+                  ▼
+        DispatcherServlet
+                  │
+                  ▼
+            Spring MVC
+                  │
+                  ▼
+         Business Services
+```
+
+---
+
+### Mode 1 - Gateway Mode
+
+Gateway Mode converts a transport protocol into HTTP and forwards the request
+to an existing Servlet container.
+
+```
+               Client
+                  │
+            RSocket / TCP
+                  │
+                  ▼
+       Connector Gateway
+      (RSocket → HTTP)
+                  │
+             HTTP Client
+                  │
+                  ▼
+      Tomcat Connector (Coyote)
+                  │
+                  ▼
+      Servlet Container Runtime
+                  │
+                  ▼
+        DispatcherServlet
+                  │
+                  ▼
+            Spring MVC
+                  │
+                  ▼
+         Business Services
+```
+
+Characteristics:
+
+- Existing Spring Boot application remains unchanged.
+- Existing Tomcat deployment remains unchanged.
+- Existing Servlet semantics are fully preserved.
+- Suitable for rapid migration with minimal implementation cost.
+
+---
+
+### Mode 2 - Bridge Mode
+
+Bridge Mode bypasses the HTTP connector and dispatches requests directly into
+the Spring MVC runtime.
+
+```
+               Client
+                  │
+            RSocket / TCP
+                  │
+                  ▼
+        Connector Bridge
+                  │
+                  ▼
+     Servlet Runtime Adapter
+                  │
+                  ▼
+        DispatcherServlet
+                  │
+                  ▼
+            Spring MVC
+                  │
+                  ▼
+         Business Services
+```
+
+Characteristics:
+
+- No HTTP conversion.
+- No Tomcat Connector.
+- Maximum transport flexibility.
+- Higher implementation complexity.
+
+---
+
+## Unified Architecture
+
+```
+                         Spring MVC
+                              ▲
+                              │
+                  DispatcherServlet
+                              ▲
+
